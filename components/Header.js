@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/predictions";
+import { isAdminEmail } from "@/lib/admin";
 
 /**
  * Top navigation bar — shows user info and sign-out button.
@@ -36,6 +38,14 @@ export default async function Header() {
 
         {user && (
           <div className="flex items-center gap-4">
+            {isAdminEmail(user.email) && (
+              <Link
+                href="/admin"
+                className="rounded-lg border border-violet-800/50 px-3 py-1.5 text-sm text-violet-300 transition hover:border-violet-600 hover:text-violet-200"
+              >
+                Admin
+              </Link>
+            )}
             <span className="hidden text-sm text-zinc-400 sm:inline">
               Playing as{" "}
               <span className="font-medium text-emerald-400">{displayName}</span>

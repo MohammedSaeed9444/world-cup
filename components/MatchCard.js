@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { submitPrediction } from "@/app/actions/predictions";
+import { getPredictionDeadline } from "@/lib/match-utils";
+import PointsBadge from "@/components/PointsBadge";
 import { formatPointsLabel } from "@/utils/scoring";
 
 /**
@@ -32,15 +34,15 @@ export default function MatchCard({ match, prediction }) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const kickoff = new Date(match.match_time);
-    if (now >= kickoff) return; // already locked, no need to poll
+    const deadline = getPredictionDeadline(match);
+    if (now >= deadline) return;
 
     const interval = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(interval);
-  }, [match.match_time, now]);
+  }, [match, now]);
 
-  const kickoff = new Date(match.match_time);
-  const isLocked = now >= kickoff;
+  const deadline = getPredictionDeadline(match);
+  const isLocked = now >= deadline;
   const isFinished = match.is_finished;
 
   const predHome = prediction?.pred_home ?? 0;
@@ -59,10 +61,18 @@ export default function MatchCard({ match, prediction }) {
           <p className="mt-0.5 text-xs text-zinc-500">
             Kickoff: {formatKickoff(match.match_time)}
           </p>
+          {match.prediction_deadline && (
+            <p className="text-xs text-zinc-600">
+              Predictions close: {formatKickoff(match.prediction_deadline)}
+            </p>
+          )}
         </div>
 
         {/* Status badge */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {isFinished && prediction && (
+            <PointsBadge points={prediction.points} />
+          )}
           {isFinished && (
             <span className="rounded-full bg-amber-900/50 px-3 py-0.5 text-xs font-medium text-amber-300">
               Full Time
@@ -91,12 +101,15 @@ export default function MatchCard({ match, prediction }) {
 
           {prediction ? (
             <div className="mt-3 border-t border-zinc-700 pt-3 text-center">
-              <p className="text-sm text-zinc-400">
-                Your prediction:{" "}
-                <span className="font-medium text-white">
-                  {predHome} – {predAway}
-                </span>
-              </p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-sm text-zinc-400">
+                  Your prediction:{" "}
+                  <span className="font-medium text-white">
+                    {predHome} – {predAway}
+                  </span>
+                </p>
+                <PointsBadge points={prediction.points} />
+              </div>
               <p className="mt-1 text-sm font-semibold text-amber-400">
                 {formatPointsLabel(prediction.points)}
               </p>

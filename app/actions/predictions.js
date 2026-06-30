@@ -48,10 +48,10 @@ export async function submitPrediction(prevState, formData) {
   }
 
   // --- Layer 3: SERVER-SIDE KICKOFF LOCKOUT ---
-  // Fetch the authoritative match_time from the database (never trust the client).
+  // Fetch match deadline from DB (never trust the client clock alone)
   const { data: match, error: matchError } = await supabase
     .from("matches")
-    .select("match_time, home_team, away_team")
+    .select("match_time, prediction_deadline, home_team, away_team")
     .eq("id", matchId)
     .single();
 
@@ -59,12 +59,12 @@ export async function submitPrediction(prevState, formData) {
     return { error: "Match not found." };
   }
 
-  const kickoff = new Date(match.match_time);
+  const deadline = new Date(match.prediction_deadline ?? match.match_time);
   const now = new Date();
 
-  if (now >= kickoff) {
+  if (now >= deadline) {
     return {
-      error: `Predictions are locked. ${match.home_team} vs ${match.away_team} kicked off at ${kickoff.toUTCString()}.`,
+      error: `Predictions are locked. Deadline was ${deadline.toUTCString()} for ${match.home_team} vs ${match.away_team}.`,
     };
   }
 

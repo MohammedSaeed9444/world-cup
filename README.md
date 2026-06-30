@@ -56,8 +56,9 @@ world-cup-predictions/
 ### Step 2 — Run the Database Schema
 
 1. In Supabase Dashboard → **SQL Editor** → **New query**.
-2. Paste the entire contents of `supabase/migrations/001_initial_schema.sql`.
-3. Click **Run**. You should see "Success" with no errors.
+2. Paste and run `supabase/migrations/001_initial_schema.sql`.
+3. Paste and run `supabase/migrations/002_admin_prediction_deadline.sql` (adds admin RLS + prediction deadlines).
+4. Click **Run** on each. You should see "Success" with no errors.
 
 This creates:
 - `profiles`, `matches`, `predictions` tables
@@ -155,17 +156,18 @@ Logic lives in `utils/scoring.js` (frontend) and `calculate_prediction_points()`
 
 ## Managing Matches (Admin)
 
-Add real World Cup fixtures via Supabase Dashboard → **Table Editor** → `matches`:
+An in-app admin dashboard is available at **`/admin`** — restricted to `mohammedsaeed9444@gmail.com` only.
 
-| Column | Description |
+| Feature | Description |
 |---|---|
-| `home_team` | e.g. "Brazil" |
-| `away_team` | e.g. "Argentina" |
-| `match_time` | Kickoff in UTC (timestamptz) |
-| `home_score` / `away_score` | Set when match ends |
-| `is_finished` | Set to `true` to trigger scoring |
+| Add Match | Home/away teams, kickoff datetime, prediction deadline |
+| Set Deadline | Offset before kickoff (e.g. 1 min) or custom datetime |
+| Finish Match | Enter final scores (integers ≥ 0), marks match completed |
+| Auto-scoring | DB trigger awards +25 / +10 / 0 to all predictions |
 
-When you set `is_finished = true` with final scores, the DB trigger automatically recalculates all prediction points.
+Non-admin users see **Access Denied**. Unauthenticated users are redirected to `/login`.
+
+You can still manage data manually via **Supabase → Table Editor → matches** if needed.
 
 ---
 
