@@ -104,8 +104,12 @@ Open [http://localhost:3000](http://localhost:3000) → you'll be redirected to 
 
 1. Push the repo to GitHub.
 2. Import the repo at [vercel.com/new](https://vercel.com/new).
-3. Add the two `NEXT_PUBLIC_*` env vars in Vercel project settings.
-4. Deploy. Update Supabase **Site URL** and **Redirect URLs** to your Vercel domain.
+3. **Required:** In Vercel → Project → **Settings → Environment Variables**, add:
+   - `NEXT_PUBLIC_SUPABASE_URL` = your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your Supabase anon key
+   - Apply to **Production**, **Preview**, and **Development**
+4. Redeploy (Deployments → ⋯ → Redeploy) after saving env vars.
+5. Update Supabase **Site URL** and **Redirect URLs** to your Vercel domain (e.g. `https://world-cup-git-main-shuja1.vercel.app/auth/callback`).
 
 ---
 

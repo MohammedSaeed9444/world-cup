@@ -1,5 +1,8 @@
 import AuthForm from "@/components/AuthForm";
 
+/** Skip static prerender — AuthForm needs Supabase env vars at runtime only */
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Login — World Cup Predictions",
   description: "Sign in or create an account to join the prediction pool.",

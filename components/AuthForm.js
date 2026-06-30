@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
  */
 export default function AuthForm() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [mode, setMode] = useState("login"); // 'login' | 'register'
   const [email, setEmail] = useState("");
@@ -25,6 +24,8 @@ export default function AuthForm() {
     setMessage(null);
 
     try {
+      const supabase = createClient();
+
       if (mode === "register") {
         const { error } = await supabase.auth.signUp({
           email,
