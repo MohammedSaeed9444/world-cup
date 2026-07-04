@@ -1,15 +1,16 @@
-# World Cup Match Score Predictions ⚽
+World Cup Match Score Predictions ⚽
 
-A full-stack prediction pool for you and your friends. Built on **100% free tiers**:
+A simple prediction pool where you and your friends can predict World Cup match scores and compete on a shared leaderboard.
 
-| Layer | Tech |
-|---|---|
-| Frontend | Next.js 16 (App Router) + Tailwind CSS v4 |
-| Backend | Next.js Server Actions |
-| Database | Supabase PostgreSQL |
-| Auth | Supabase Auth (Email/Password) |
-| Hosting | Vercel Free Tier |
+The project is built entirely using free services.
 
+Tech Stack
+Layer	Technology
+Frontend	Next.js 16 (App Router) + Tailwind CSS v4
+Backend	Next.js Server Actions
+Database	Supabase PostgreSQL
+Authentication	Supabase Auth (Email/Password)
+Hosting	Vercel
 ---
 
 ## Project Structure
@@ -18,100 +19,62 @@ A full-stack prediction pool for you and your friends. Built on **100% free tier
 world-cup-predictions/
 ├── app/
 │   ├── actions/
-│   │   └── predictions.js      # Server actions (submitPrediction, signOut)
-│   ├── auth/callback/route.js  # Supabase auth callback handler
-│   ├── login/page.js           # Login / registration page
-│   ├── layout.js               # Root layout
-│   ├── page.js                 # Dashboard (matches + leaderboard)
+│   │   └── predictions.js
+│   ├── auth/callback/route.js
+│   ├── login/page.js
+│   ├── layout.js
+│   ├── page.js
 │   └── globals.css
+│
 ├── components/
-│   ├── AuthForm.js             # Email/password login & sign-up
-│   ├── Header.js               # Nav bar with sign-out
-│   ├── Leaderboard.js          # Ranked player table
-│   ├── MatchCard.js            # Match card with frontend time lockout
-│   └── MatchList.js            # Renders all MatchCards
+│   ├── AuthForm.js
+│   ├── Header.js
+│   ├── Leaderboard.js
+│   ├── MatchCard.js
+│   └── MatchList.js
+│
 ├── lib/supabase/
-│   ├── client.js               # Browser Supabase client
-│   ├── server.js               # Server Supabase client
-│   └── middleware.js           # Session refresh + route protection
+│   ├── client.js
+│   ├── server.js
+│   └── middleware.js
+│
 ├── utils/
-│   └── scoring.js              # Points calculation (25 / 10 / 0)
+│   └── scoring.js
+│
 ├── supabase/migrations/
-│   └── 001_initial_schema.sql  # Full DB schema, triggers, RLS, view
-├── middleware.js               # Next.js middleware entry point
+│   ├── 001_initial_schema.sql
+│   └── 002_admin_prediction_deadline.sql
+│
+├── middleware.js
 ├── .env.local.example
 └── package.json
 ```
 
 ---
 
-## Step-by-Step Setup
+## Setup
 
-### Step 1 — Create a Supabase Project (Free)
 
-1. Go to [supabase.com](https://supabase.com) and sign up.
-2. Click **New Project**, pick a name/region, set a DB password.
-3. Wait for the project to finish provisioning (~2 min).
-
-### Step 2 — Run the Database Schema
-
-1. In Supabase Dashboard → **SQL Editor** → **New query**.
-2. Paste and run `supabase/migrations/001_initial_schema.sql`.
-3. Paste and run `supabase/migrations/002_admin_prediction_deadline.sql` (adds admin RLS + prediction deadlines).
-4. Click **Run** on each. You should see "Success" with no errors.
-
-This creates:
-- `profiles`, `matches`, `predictions` tables
-- Unique constraint on `(user_id, match_id)`
-- **Kickoff lockout trigger** on `predictions` (DB-level force)
-- **Scoring trigger** on `matches` when marked finished
-- `global_leaderboard` SQL view
-- Row Level Security policies
-- Sample demo fixtures
-
-### Step 3 — Configure Supabase Auth
-
-1. Dashboard → **Authentication** → **Providers** → enable **Email**.
-2. Dashboard → **Authentication** → **URL Configuration**:
-   - **Site URL**: `http://localhost:3000` (change to your Vercel URL after deploy)
-   - **Redirect URLs**: add `http://localhost:3000/auth/callback`
-3. For development, disable email confirmation:
-   - **Authentication** → **Providers** → Email → toggle off **Confirm email**
-   - (Re-enable for production if you want verified emails)
-
-### Step 4 — Configure Environment Variables
+### Configure Environment Variables
+Create project on Supabase
 
 ```bash
 cp .env.local.example .env.local
-```
-
-Edit `.env.local` with values from **Dashboard → Project Settings → API**:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG...
 ```
 
-### Step 5 — Install & Run Locally
+###  Install & Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) → you'll be redirected to `/login`.
 
-### Step 6 — Deploy to Vercel (Free)
-
-1. Push the repo to GitHub.
-2. Import the repo at [vercel.com/new](https://vercel.com/new).
-3. **Required:** In Vercel → Project → **Settings → Environment Variables**, add:
-   - `NEXT_PUBLIC_SUPABASE_URL` = your Supabase project URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your Supabase anon key
-   - Apply to **Production**, **Preview**, and **Development**
-4. Redeploy (Deployments → ⋯ → Redeploy) after saving env vars.
-5. Update Supabase **Site URL** and **Redirect URLs** to your Vercel domain (e.g. `https://world-cup-git-main-shuja1.vercel.app/auth/callback`).
-
+### Deploy to Vercel
 ---
 
 ## Security Architecture (Triple Lockout)
@@ -154,30 +117,22 @@ Logic lives in `utils/scoring.js` (frontend) and `calculate_prediction_points()`
 
 ---
 
-## Managing Matches (Admin)
+Admin Dashboard
 
-An in-app admin dashboard is available at **`/admin`** — restricted to `mohammedsaeed9444@gmail.com` only.
+An admin panel is available at:
 
-| Feature | Description |
-|---|---|
-| Add Match | Home/away teams, kickoff datetime, prediction deadline |
-| Set Deadline | Offset before kickoff (e.g. 1 min) or custom datetime |
-| Finish Match | Enter final scores (integers ≥ 0), marks match completed |
-| Delete Match | Removes the match and all predictions for it (with confirmation) |
-| Auto-scoring | DB trigger awards +25 / +10 / 0 to all predictions |
+/admin
 
-Non-admin users see **Access Denied**. Unauthenticated users are redirected to `/login`.
+Only the administrator account can access it.
 
-You can still manage data manually via **Supabase → Table Editor → matches** if needed.
+From the dashboard you can:
 
----
+Add new matches
+Edit kickoff times
+Configure prediction deadlines
+Enter final scores
+Finish matches
+Delete matches
+Automatically calculate player scores
 
-## Adding Friends
-
-Each friend:
-1. Visits your deployed URL (or localhost during dev).
-2. Creates an account on `/login`.
-3. Submits predictions before each kickoff.
-4. Appears on the shared **Leaderboard**.
-
-No invite codes needed — everyone shares the same match list and leaderboard view.
+Users without admin access will see an Access Denied page.
