@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { finishMatch, updateMatchDeadline } from "@/app/actions/admin";
+import { deleteMatch, finishMatch, updateMatchDeadline } from "@/app/actions/admin";
 import { DEADLINE_OFFSET_OPTIONS } from "@/lib/constants/admin";
 
 const inputClass =
@@ -26,6 +26,19 @@ function MatchRow({ match }) {
     updateMatchDeadline,
     null
   );
+  const [deleteState, deleteAction, deletePending] = useActionState(
+    deleteMatch,
+    null
+  );
+
+  const matchLabel = `${match.home_team} vs ${match.away_team}`;
+
+  function handleDeleteSubmit(e) {
+    const confirmed = window.confirm(
+      `Delete ${matchLabel}?\n\nThis permanently removes the match and all user predictions for it.`
+    );
+    if (!confirmed) e.preventDefault();
+  }
 
   return (
     <tr className="border-b border-zinc-800/80 align-top">
@@ -125,6 +138,28 @@ function MatchRow({ match }) {
           )}
         </form>
       </td>
+
+      <td className="py-4">
+        <form action={deleteAction} onSubmit={handleDeleteSubmit}>
+          <input type="hidden" name="matchId" value={match.id} />
+          <button
+            type="submit"
+            disabled={deletePending}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-900/40 disabled:opacity-50"
+          >
+            {deletePending && (
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-300/30 border-t-red-300" />
+            )}
+            {deletePending ? "Deleting…" : "Delete Match"}
+          </button>
+          {deleteState?.error && (
+            <p className="mt-2 text-xs text-red-400">{deleteState.error}</p>
+          )}
+          {deleteState?.success && (
+            <p className="mt-2 text-xs text-emerald-400">{deleteState.message}</p>
+          )}
+        </form>
+      </td>
     </tr>
   );
 }
@@ -153,7 +188,8 @@ export default function ManageMatchesTable({ matches }) {
             <tr className="border-b border-zinc-800 text-xs text-zinc-500">
               <th className="pb-3 pr-4 font-medium">Match</th>
               <th className="pb-3 pr-4 font-medium">Prediction Deadline</th>
-              <th className="pb-3 font-medium">Final Score</th>
+              <th className="pb-3 pr-4 font-medium">Final Score</th>
+              <th className="pb-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>

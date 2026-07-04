@@ -167,3 +167,33 @@ export async function finishMatch(prevState, formData) {
   revalidatePath("/admin");
   return { success: true, message: "Match marked complete. Points recalculated." };
 }
+
+/**
+ * Permanently delete a match and its predictions (CASCADE).
+ */
+export async function deleteMatch(prevState, formData) {
+  const { denied, supabase } = await requireAdmin();
+  if (denied) return { error: "Access denied." };
+
+  const matchId = String(formData.get("matchId") ?? "");
+  if (!matchId) return { error: "Match ID is required." };
+
+  const { data: match, error: fetchError } = await supabase
+    .from("matches")
+    .select("home_team, away_team")
+    .eq("id", matchId)
+    .single();
+
+  if (fetchError || !match) return { error: "Match not found." };
+
+  const { error } = await supabase.from("matches").delete().eq("id", matchId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return {
+    success: true,
+    message: `Deleted ${match.home_team} vs ${match.away_team}.`,
+  };
+}

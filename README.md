@@ -163,6 +163,7 @@ An in-app admin dashboard is available at **`/admin`** — restricted to `mohamm
 | Add Match | Home/away teams, kickoff datetime, prediction deadline |
 | Set Deadline | Offset before kickoff (e.g. 1 min) or custom datetime |
 | Finish Match | Enter final scores (integers ≥ 0), marks match completed |
+| Delete Match | Removes the match and all predictions for it (with confirmation) |
 | Auto-scoring | DB trigger awards +25 / +10 / 0 to all predictions |
 
 Non-admin users see **Access Denied**. Unauthenticated users are redirected to `/login`.
