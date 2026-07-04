@@ -17,14 +17,6 @@ function formatDt(iso) {
   });
 }
 
-/** Convert ISO timestamp to value suitable for datetime-local input */
-function toLocalInputValue(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 function MatchRow({ match }) {
   const [finishState, finishAction, finishPending] = useActionState(
     finishMatch,
@@ -46,7 +38,7 @@ function MatchRow({ match }) {
           Kickoff: {formatDt(match.match_time)}
         </p>
         <p className="text-xs text-violet-400/80">
-          Predictions close: {formatDt(match.prediction_deadline)}
+          Predictions close: {formatDt(match.prediction_deadline ?? match.match_time)}
         </p>
         {match.is_finished && (
           <span className="mt-2 inline-block rounded-full bg-amber-900/40 px-2 py-0.5 text-xs text-amber-300">
@@ -55,23 +47,16 @@ function MatchRow({ match }) {
         )}
       </td>
 
-      {/* Prediction deadline editor */}
       <td className="py-4 pr-4">
         {!match.is_finished && (
           <form action={deadlineAction} className="space-y-2">
             <input type="hidden" name="matchId" value={match.id} />
-            <select
-              name="deadlineMode"
-              defaultValue="offset"
-              className={`${inputClass} w-full`}
-            >
-              <option value="offset">Offset before kickoff</option>
-              <option value="custom">Custom deadline</option>
-            </select>
+            <p className="text-xs text-zinc-500">Close before kickoff</p>
             <select
               name="offsetMinutes"
               defaultValue="1"
               className={`${inputClass} w-full`}
+              aria-label="Offset before kickoff"
             >
               {DEADLINE_OFFSET_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -79,12 +64,6 @@ function MatchRow({ match }) {
                 </option>
               ))}
             </select>
-            <input
-              name="customDeadline"
-              type="datetime-local"
-              defaultValue={toLocalInputValue(match.prediction_deadline)}
-              className={`${inputClass} w-full`}
-            />
             <button
               type="submit"
               disabled={deadlinePending}
@@ -102,7 +81,6 @@ function MatchRow({ match }) {
         )}
       </td>
 
-      {/* Final score + finish */}
       <td className="py-4">
         <form action={finishAction} className="space-y-2">
           <input type="hidden" name="matchId" value={match.id} />
@@ -151,9 +129,6 @@ function MatchRow({ match }) {
   );
 }
 
-/**
- * Table of all matches with deadline controls and result entry.
- */
 export default function ManageMatchesTable({ matches }) {
   if (!matches?.length) {
     return (

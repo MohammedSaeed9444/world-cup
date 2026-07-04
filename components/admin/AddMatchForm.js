@@ -71,33 +71,13 @@ export default function AddMatchForm() {
           />
         </div>
 
-        <fieldset className="space-y-3 rounded-xl border border-zinc-800 p-4">
+        <fieldset className="rounded-xl border border-zinc-800 p-4">
           <legend className="px-1 text-sm font-medium text-zinc-300">
             Prediction Deadline
           </legend>
-
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2 text-zinc-300">
-              <input
-                type="radio"
-                name="deadlineMode"
-                value="offset"
-                defaultChecked
-                className="accent-violet-500"
-              />
-              Close before kickoff
-            </label>
-            <label className="flex items-center gap-2 text-zinc-300">
-              <input
-                type="radio"
-                name="deadlineMode"
-                value="custom"
-                className="accent-violet-500"
-              />
-              Custom date &amp; time
-            </label>
-          </div>
-
+          <p className="mb-3 text-xs text-zinc-500">
+            Close before kickoff
+          </p>
           <div>
             <label htmlFor="offsetMinutes" className={labelClass}>
               Offset before kickoff
@@ -114,18 +94,6 @@ export default function AddMatchForm() {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label htmlFor="customDeadline" className={labelClass}>
-              Custom deadline (when &quot;Custom&quot; mode selected)
-            </label>
-            <input
-              id="customDeadline"
-              name="customDeadline"
-              type="datetime-local"
-              className={inputClass}
-            />
           </div>
         </fieldset>
 

@@ -1,13 +1,11 @@
 -- =============================================================================
--- Admin features: prediction_deadline column + admin RLS + updated lockout trigger
--- Run in Supabase SQL Editor AFTER 001_initial_schema.sql
+-- FIX: Add prediction_deadline column (run this in Supabase SQL Editor)
+-- Safe to run multiple times.
 -- =============================================================================
 
--- Per-match prediction closing deadline (can be before kickoff)
 ALTER TABLE public.matches
   ADD COLUMN IF NOT EXISTS prediction_deadline TIMESTAMPTZ;
 
--- Backfill existing rows: default deadline = kickoff time
 UPDATE public.matches
 SET prediction_deadline = match_time
 WHERE prediction_deadline IS NULL;
@@ -15,9 +13,7 @@ WHERE prediction_deadline IS NULL;
 ALTER TABLE public.matches
   ALTER COLUMN prediction_deadline SET NOT NULL;
 
--- ---------------------------------------------------------------------------
--- Updated lockout trigger — uses prediction_deadline instead of match_time
--- ---------------------------------------------------------------------------
+-- Lockout trigger uses prediction_deadline
 CREATE OR REPLACE FUNCTION public.prevent_prediction_after_kickoff()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -45,9 +41,14 @@ BEGIN
 END;
 $$;
 
--- ---------------------------------------------------------------------------
--- Admin RLS — only mohammedsaeed9444@gmail.com may INSERT/UPDATE matches
--- ---------------------------------------------------------------------------
+DROP TRIGGER IF EXISTS trg_prevent_prediction_after_kickoff ON public.predictions;
+CREATE TRIGGER trg_prevent_prediction_after_kickoff
+  BEFORE INSERT OR UPDATE ON public.predictions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.prevent_prediction_after_kickoff();
+
+-- Admin RLS (idempotent)
+DROP POLICY IF EXISTS "admin_insert_matches" ON public.matches;
 CREATE POLICY "admin_insert_matches"
   ON public.matches FOR INSERT
   TO authenticated
@@ -59,6 +60,7 @@ CREATE POLICY "admin_insert_matches"
     )
   );
 
+DROP POLICY IF EXISTS "admin_update_matches" ON public.matches;
 CREATE POLICY "admin_update_matches"
   ON public.matches FOR UPDATE
   TO authenticated
@@ -76,3 +78,6 @@ CREATE POLICY "admin_update_matches"
         AND email = 'mohammedsaeed9444@gmail.com'
     )
   );
+
+-- Refresh PostgREST schema cache
+NOTIFY pgrst, 'reload schema';

@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 
+const SCHEMA_HINT =
+  "Database setup required: run supabase/migrations/002_admin_prediction_deadline.sql in the Supabase SQL Editor, then try again.";
+
 /**
  * Parse a datetime-local string ("2026-07-15T20:00") into an ISO timestamp.
- * @param {string} value
  */
 function parseLocalDatetime(value) {
   const date = new Date(value);
@@ -14,27 +16,25 @@ function parseLocalDatetime(value) {
 }
 
 /**
- * Compute prediction_deadline from kickoff and either a custom datetime or offset.
+ * Compute prediction_deadline = kickoff minus offset minutes.
  */
-function resolvePredictionDeadline(matchTimeIso, deadlineMode, offsetMinutes, customDeadline) {
+function deadlineFromOffset(matchTimeIso, offsetMinutes) {
   const kickoff = new Date(matchTimeIso);
-
-  if (deadlineMode === "custom") {
-    const custom = parseLocalDatetime(customDeadline);
-    if (!custom) return { error: "Invalid custom prediction deadline." };
-    if (new Date(custom) > kickoff) {
-      return { error: "Prediction deadline cannot be after kickoff." };
-    }
-    return { deadline: custom };
-  }
-
   const offset = parseInt(String(offsetMinutes), 10);
+
   if (Number.isNaN(offset) || offset < 0) {
     return { error: "Invalid deadline offset." };
   }
 
   const deadline = new Date(kickoff.getTime() - offset * 60 * 1000);
   return { deadline: deadline.toISOString() };
+}
+
+function formatDbError(message) {
+  if (message?.includes("prediction_deadline")) {
+    return SCHEMA_HINT;
+  }
+  return message;
 }
 
 /**
@@ -47,9 +47,7 @@ export async function createMatch(prevState, formData) {
   const homeTeam = String(formData.get("homeTeam") ?? "").trim();
   const awayTeam = String(formData.get("awayTeam") ?? "").trim();
   const matchTimeLocal = String(formData.get("matchTime") ?? "").trim();
-  const deadlineMode = String(formData.get("deadlineMode") ?? "offset");
   const offsetMinutes = formData.get("offsetMinutes");
-  const customDeadline = String(formData.get("customDeadline") ?? "").trim();
 
   if (!homeTeam || !awayTeam) {
     return { error: "Home and away team names are required." };
@@ -64,11 +62,9 @@ export async function createMatch(prevState, formData) {
     return { error: "Invalid match date/time." };
   }
 
-  const { deadline, error: deadlineError } = resolvePredictionDeadline(
+  const { deadline, error: deadlineError } = deadlineFromOffset(
     matchTime,
-    deadlineMode,
-    offsetMinutes,
-    customDeadline
+    offsetMinutes
   );
   if (deadlineError) return { error: deadlineError };
 
@@ -80,7 +76,7 @@ export async function createMatch(prevState, formData) {
     is_finished: false,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: formatDbError(error.message) };
 
   revalidatePath("/");
   revalidatePath("/admin");
@@ -88,16 +84,14 @@ export async function createMatch(prevState, formData) {
 }
 
 /**
- * Update prediction deadline for an existing match.
+ * Update prediction deadline for an existing match (offset before kickoff).
  */
 export async function updateMatchDeadline(prevState, formData) {
   const { denied, supabase } = await requireAdmin();
   if (denied) return { error: "Access denied." };
 
   const matchId = String(formData.get("matchId") ?? "");
-  const deadlineMode = String(formData.get("deadlineMode") ?? "offset");
   const offsetMinutes = formData.get("offsetMinutes");
-  const customDeadline = String(formData.get("customDeadline") ?? "").trim();
 
   const { data: match, error: fetchError } = await supabase
     .from("matches")
@@ -107,11 +101,9 @@ export async function updateMatchDeadline(prevState, formData) {
 
   if (fetchError || !match) return { error: "Match not found." };
 
-  const { deadline, error: deadlineError } = resolvePredictionDeadline(
+  const { deadline, error: deadlineError } = deadlineFromOffset(
     match.match_time,
-    deadlineMode,
-    offsetMinutes,
-    customDeadline
+    offsetMinutes
   );
   if (deadlineError) return { error: deadlineError };
 
@@ -120,7 +112,7 @@ export async function updateMatchDeadline(prevState, formData) {
     .update({ prediction_deadline: deadline })
     .eq("id", matchId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: formatDbError(error.message) };
 
   revalidatePath("/");
   revalidatePath("/admin");
@@ -129,7 +121,6 @@ export async function updateMatchDeadline(prevState, formData) {
 
 /**
  * Save final scores and mark a match as completed.
- * DB trigger recalculates all user prediction points automatically.
  */
 export async function finishMatch(prevState, formData) {
   const { denied, supabase } = await requireAdmin();
@@ -139,7 +130,13 @@ export async function finishMatch(prevState, formData) {
   const homeScoreRaw = formData.get("homeScore");
   const awayScoreRaw = formData.get("awayScore");
 
-  if (!matchId || homeScoreRaw === null || homeScoreRaw === "" || awayScoreRaw === null || awayScoreRaw === "") {
+  if (
+    !matchId ||
+    homeScoreRaw === null ||
+    homeScoreRaw === "" ||
+    awayScoreRaw === null ||
+    awayScoreRaw === ""
+  ) {
     return { error: "Match ID and both scores are required." };
   }
 
