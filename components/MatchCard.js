@@ -5,7 +5,7 @@ import { submitPrediction } from "@/app/actions/predictions";
 import { getPredictionDeadline } from "@/lib/match-utils";
 import PointsBadge from "@/components/PointsBadge";
 import { formatPointsLabel } from "@/utils/scoring";
-import { getFlag } from "@/utils/flags";
+import FlagIcon from "@/components/FlagIcon";
 
 function formatKickoff(isoString) {
   return new Date(isoString).toLocaleString(undefined, {
@@ -34,8 +34,6 @@ export default function MatchCard({ match, prediction }) {
   const predHome = prediction?.pred_home ?? "";
   const predAway = prediction?.pred_away ?? "";
 
-  const homeFlag = getFlag(match.home_team);
-  const awayFlag = getFlag(match.away_team);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 transition hover:border-zinc-700">
@@ -55,7 +53,7 @@ export default function MatchCard({ match, prediction }) {
         <div className="flex items-center justify-between gap-3">
           {/* Home team */}
           <div className="flex min-w-0 flex-1 flex-col items-center text-center">
-            <span className="text-3xl leading-none">{homeFlag}</span>
+            <FlagIcon team={match.home_team} size={36} />
             <span className="mt-1.5 text-sm font-semibold text-white leading-tight">
               {match.home_team}
             </span>
@@ -97,7 +95,7 @@ export default function MatchCard({ match, prediction }) {
 
           {/* Away team */}
           <div className="flex min-w-0 flex-1 flex-col items-center text-center">
-            <span className="text-3xl leading-none">{awayFlag}</span>
+            <FlagIcon team={match.away_team} size={36} />
             <span className="mt-1.5 text-sm font-semibold text-white leading-tight">
               {match.away_team}
             </span>
@@ -148,9 +146,9 @@ export default function MatchCard({ match, prediction }) {
 
             <div className="flex items-end justify-center gap-3">
               <div className="text-center">
-                <label className="mb-1 block text-xs text-zinc-500">
-                  {homeFlag} {match.home_team}
-                </label>
+              <label className="mb-1 flex items-center justify-center gap-1 text-xs text-zinc-500">
+                <FlagIcon team={match.home_team} size={14} /> {match.home_team}
+              </label>
                 <input
                   type="number"
                   name="predHome"
@@ -163,9 +161,9 @@ export default function MatchCard({ match, prediction }) {
               </div>
               <span className="pb-2.5 text-lg text-zinc-600">–</span>
               <div className="text-center">
-                <label className="mb-1 block text-xs text-zinc-500">
-                  {awayFlag} {match.away_team}
-                </label>
+              <label className="mb-1 flex items-center justify-center gap-1 text-xs text-zinc-500">
+                <FlagIcon team={match.away_team} size={14} /> {match.away_team}
+              </label>
                 <input
                   type="number"
                   name="predAway"

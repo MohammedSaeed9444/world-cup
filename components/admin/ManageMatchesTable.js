@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { deleteMatch, finishMatch, updateMatch, updateMatchDeadline } from "@/app/actions/admin";
 import { DEADLINE_OFFSET_OPTIONS, WORLD_CUP_TEAMS } from "@/lib/constants/admin";
-import { getFlag } from "@/utils/flags";
+import FlagIcon from "@/components/FlagIcon";
 
 const inputClass =
   "rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white outline-none focus:border-violet-500";
@@ -48,13 +48,13 @@ function MatchRow({ match }) {
         <td className="py-4 pr-4">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-medium text-white">
-                <span>{getFlag(match.home_team)}</span>{" "}
-                {match.home_team}{" "}
-                <span className="text-zinc-500">vs</span>{" "}
-                <span>{getFlag(match.away_team)}</span>{" "}
-                {match.away_team}
-              </p>
+          <p className="flex flex-wrap items-center gap-1.5 font-medium text-white">
+              <FlagIcon team={match.home_team} size={18} />
+              {match.home_team}
+              <span className="text-zinc-500">vs</span>
+              <FlagIcon team={match.away_team} size={18} />
+              {match.away_team}
+            </p>
               <p className="mt-1 text-xs text-zinc-500">
                 Kickoff: {formatDt(match.match_time)}
               </p>
