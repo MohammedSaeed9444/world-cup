@@ -120,6 +120,65 @@ export async function updateMatchDeadline(prevState, formData) {
 }
 
 /**
+ * Edit a match's team names and/or kickoff time.
+ * The prediction deadline offset is preserved automatically.
+ */
+export async function updateMatch(prevState, formData) {
+  const { denied, supabase } = await requireAdmin();
+  if (denied) return { error: "Access denied." };
+
+  const matchId = String(formData.get("matchId") ?? "");
+  const homeTeam = String(formData.get("homeTeam") ?? "").trim();
+  const awayTeam = String(formData.get("awayTeam") ?? "").trim();
+  const matchTimeLocal = String(formData.get("matchTime") ?? "").trim();
+
+  if (!homeTeam || !awayTeam) {
+    return { error: "Both team names are required." };
+  }
+  if (homeTeam.toLowerCase() === awayTeam.toLowerCase()) {
+    return { error: "Home and away teams must be different." };
+  }
+
+  const matchTime = parseLocalDatetime(matchTimeLocal);
+  if (!matchTime) {
+    return { error: "Invalid match date/time." };
+  }
+
+  // Preserve the existing offset between kickoff and deadline
+  const { data: existing, error: fetchError } = await supabase
+    .from("matches")
+    .select("match_time, prediction_deadline")
+    .eq("id", matchId)
+    .single();
+
+  if (fetchError || !existing) return { error: "Match not found." };
+
+  const offsetMs =
+    new Date(existing.match_time).getTime() -
+    new Date(existing.prediction_deadline).getTime();
+
+  const newDeadline = new Date(
+    new Date(matchTime).getTime() - offsetMs
+  ).toISOString();
+
+  const { error } = await supabase
+    .from("matches")
+    .update({
+      home_team: homeTeam,
+      away_team: awayTeam,
+      match_time: matchTime,
+      prediction_deadline: newDeadline,
+    })
+    .eq("id", matchId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { success: true, message: "Match updated successfully." };
+}
+
+/**
  * Save final scores and mark a match as completed.
  */
 export async function finishMatch(prevState, formData) {

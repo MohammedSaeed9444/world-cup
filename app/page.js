@@ -1,15 +1,10 @@
 import Header from "@/components/Header";
 import Leaderboard from "@/components/Leaderboard";
-import MatchList from "@/components/MatchList";
+import MatchesBoard from "@/components/MatchesBoard";
 import { createClient } from "@/lib/supabase/server";
 
-/** Always render fresh — data depends on auth session and live DB state */
 export const dynamic = "force-dynamic";
 
-/**
- * Dashboard — main page showing matches, predictions, and leaderboard.
- * Server Component: fetches all data, passes to client MatchCards.
- */
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -17,17 +12,11 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch all matches ordered by kickoff time
-  const { data: matches, error: matchesError } = await supabase
+  const { data: matches } = await supabase
     .from("matches")
     .select("*")
     .order("match_time", { ascending: true });
 
-  if (matchesError) {
-    console.error("Failed to load matches:", matchesError.message);
-  }
-
-  // Fetch current user's predictions for all matches
   let predictionsByMatchId = {};
   if (user) {
     const { data: predictions } = await supabase
@@ -42,15 +31,10 @@ export default async function DashboardPage() {
     }
   }
 
-  // Fetch global leaderboard from the SQL view
-  const { data: leaderboard, error: lbError } = await supabase
+  const { data: leaderboard } = await supabase
     .from("global_leaderboard")
     .select("*")
     .order("rank", { ascending: true });
-
-  if (lbError) {
-    console.error("Failed to load leaderboard:", lbError.message);
-  }
 
   return (
     <>
@@ -58,10 +42,10 @@ export default async function DashboardPage() {
 
       <main className="mx-auto max-w-6xl flex-1 px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Matches column (2/3 width on large screens) */}
+          {/* Matches board — 2/3 width on large screens */}
           <section className="lg:col-span-2">
-            <h2 className="mb-4 text-xl font-bold text-white">📅 Fixtures</h2>
-            <MatchList
+            <h2 className="mb-5 text-xl font-bold text-white">⚽ Fixtures</h2>
+            <MatchesBoard
               matches={matches ?? []}
               predictionsByMatchId={predictionsByMatchId}
             />
