@@ -7,12 +7,22 @@ const SCHEMA_HINT =
   "Database setup required: run supabase/migrations/002_admin_prediction_deadline.sql in the Supabase SQL Editor, then try again.";
 
 /**
- * Parse a datetime-local string ("2026-07-15T20:00") into an ISO timestamp.
+ * Parse a datetime-local string ("2026-07-15T20:00") into a UTC ISO timestamp.
+ *
+ * WHY: Vercel's server runs in UTC. new Date("2026-07-15T20:00") on a UTC server
+ * treats the string as 20:00 UTC. But the admin entered 20:00 in their LOCAL
+ * timezone (e.g. UTC+3 = 17:00 UTC). We correct using the browser's tzOffset
+ * sent as a hidden form field (getTimezoneOffset() returns negative for east of UTC,
+ * e.g. UTC+3 → -180).
+ *
+ * Correction: utcMs = serverParsedMs + tzOffsetMinutes * 60_000
+ * Example: server parses 23:00 UTC, tzOffset = -180 → 23:00 - 3h = 20:00 UTC ✓
  */
-function parseLocalDatetime(value) {
+function parseLocalDatetime(value, tzOffsetMinutes = 0) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString();
+  const offset = Number.isFinite(tzOffsetMinutes) ? tzOffsetMinutes : 0;
+  return new Date(date.getTime() + offset * 60_000).toISOString();
 }
 
 /**
@@ -48,6 +58,7 @@ export async function createMatch(prevState, formData) {
   const awayTeam = String(formData.get("awayTeam") ?? "").trim();
   const matchTimeLocal = String(formData.get("matchTime") ?? "").trim();
   const offsetMinutes = formData.get("offsetMinutes");
+  const tzOffset = parseInt(String(formData.get("tzOffsetMinutes") ?? "0"), 10);
 
   if (!homeTeam || !awayTeam) {
     return { error: "Home and away team names are required." };
@@ -57,7 +68,7 @@ export async function createMatch(prevState, formData) {
     return { error: "Home and away teams must be different." };
   }
 
-  const matchTime = parseLocalDatetime(matchTimeLocal);
+  const matchTime = parseLocalDatetime(matchTimeLocal, tzOffset);
   if (!matchTime) {
     return { error: "Invalid match date/time." };
   }
@@ -131,6 +142,7 @@ export async function updateMatch(prevState, formData) {
   const homeTeam = String(formData.get("homeTeam") ?? "").trim();
   const awayTeam = String(formData.get("awayTeam") ?? "").trim();
   const matchTimeLocal = String(formData.get("matchTime") ?? "").trim();
+  const tzOffset = parseInt(String(formData.get("tzOffsetMinutes") ?? "0"), 10);
 
   if (!homeTeam || !awayTeam) {
     return { error: "Both team names are required." };
@@ -139,7 +151,7 @@ export async function updateMatch(prevState, formData) {
     return { error: "Home and away teams must be different." };
   }
 
-  const matchTime = parseLocalDatetime(matchTimeLocal);
+  const matchTime = parseLocalDatetime(matchTimeLocal, tzOffset);
   if (!matchTime) {
     return { error: "Invalid match date/time." };
   }

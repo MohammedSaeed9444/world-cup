@@ -23,6 +23,12 @@ export default function AddMatchForm() {
       </p>
 
       <form action={formAction} className="space-y-4">
+        {/* Browser timezone offset so the server converts local → UTC correctly */}
+        <input
+          type="hidden"
+          name="tzOffsetMinutes"
+          value={new Date().getTimezoneOffset()}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="homeTeam" className={labelClass}>
