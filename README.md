@@ -5,12 +5,12 @@ A simple prediction pool where you and your friends can predict World Cup match 
 The project is built entirely using free services.
 
 Tech Stack
-Layer	Technology
-Frontend	Next.js 16 (App Router) + Tailwind CSS v4
+Frontend	Next.js 16 (App Router) + Tailwind CSS
 Backend	Next.js Server Actions
 Database	Supabase PostgreSQL
 Authentication	Supabase Auth (Email/Password)
 Hosting	Vercel
+
 ---
 
 ## Project Structure
